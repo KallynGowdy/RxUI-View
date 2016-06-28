@@ -8,10 +8,8 @@
     "build:w": "tsx -w",
     "build:package": "npm run build && npm run webpack",
     "webpack": "webpack --display-modules",
-    "karma": "karma start karma.conf.js",
-    "karma:ci": "karma start karma.conf-ci.js",
-    "test": "npm run build:package && npm run karma",
-    "test:ci": "npm run build:package && npm run karma:ci"
+    "mocha": "mocha test",
+    "test": "npm run build && npm run mocha"
   },
   "repository": {
     "type": "git",
@@ -27,8 +25,11 @@
     "url": "https://github.com/KallynGowdy/RxUI-View/issues"
   },
   "homepage": "https://github.com/KallynGowdy/RxUI-View#readme",
-  "dependencies": {},
+  "dependencies": {
+    "escodegen": "^1.8.0"
+  },
   "devDependencies": {
+    "acorn-jsx": "^3.0.1",
     "bluebird": "^3.4.1",
     "chai": "^3.5.0",
     "karma": "^1.1.0",

@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/dfa9185e5b2004b3a1fa7538a943df309ec115c8/escodegen/escodegen.d.ts",
+    "raw": "registry:dt/escodegen#0.0.0+20160524140038",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/dfa9185e5b2004b3a1fa7538a943df309ec115c8/escodegen/escodegen.d.ts"
+  }
+}
