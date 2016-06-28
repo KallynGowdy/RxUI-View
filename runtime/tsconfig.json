@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "jsx": "preserve",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "module": "commonjs"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

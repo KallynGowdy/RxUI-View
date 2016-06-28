@@ -35,3 +35,7 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+!karma.conf.js
+!karma.conf-ci.js
+!webpack.config.js

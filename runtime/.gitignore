@@ -29,9 +29,21 @@ build/Release
 # Dependency directories
 node_modules
 jspm_packages
+typings
 
 # Optional npm cache directory
 .npm
 
 # Optional REPL history
 .node_repl_history
+
+# Compiled files
+**/*.js
+**/*.js.map
+**/*.jsx
+**/*.jsx.map
+**/*.d.ts
+
+!karma.conf.js
+!karma.conf-ci.js
+!webpack.config.js
