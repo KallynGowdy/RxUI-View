@@ -151,7 +151,58 @@ export interface IComponent<TViewModel> implements INotifyPropertyChanged {
 
 ### Component Parameters
 
-You are going to want to pass parameters to your components. Turns out that in RxUI-View, parameters 
+You are going to want to pass parameters to your components. Turns out that in RxUI-View, parameters are bound to the view models directly.
+
+For example, this:
+
+```tsx
+export class TestViewModel extends ReactiveObject {
+    get prop(): string { return this.get("prop"); }
+    set prop(value: string) { this.set("prop", value); }
+}
+
+export class TestViewModelComponent extends Component<TestViewModel> {
+    render() {
+        return <Label>{this.viewModel.prop}</Label>;
+    }
+}
+
+var result = <TestViewModelComponent prop="Value" />;
+```
+
+Would render this:
+
+```tsx
+<Label>Value</Label>
+```
+
+### Binding
+
+Binding to parameters works in a similar way, but the results are slightly different. 
+
+Taking the `TestViewModel` and `TestViewModelComponent` from above, the generated `onActivated` code for `TestViewModelComponent` would look something like this:
+
+```tsx
+function onActivated(d: Function) {
+    d(this.viewModel.oneWayBind(this.children[0].viewModel, "prop", "content"));
+}
+```
+
+An example for two-way bindings:
+
+```tsx
+export class EditTestViewModelComponent extends Component<TestViewModel> {
+    render() {
+        return <Input type="text" value={this.viewModel.prop}/>;
+    }
+}
+
+// Generated code:
+function onActivated(d: Function) {
+    this.children[0].viewModel.type = "text";
+    d(this.viewModel.bind(this.children[0].viewModel, "prop", "value"));
+}
+```
 
 ### Platform-Specific Components
 
@@ -180,3 +231,20 @@ export class MyPlatformSpecificComponent extends Component<MyViewModel> {
 var sub = ComponentLocator.register(MyComponent, MyPlatformSpecificComponent);
 ```
 
+## Component Lifecycle
+
+The lifecycle for component selection and creation goes as follows:
+
+ 1. Render is called on a platform specific view host with the root view model.
+ 2. The host creates an instance of the component that the view model is registered with.
+    1. The host looks up the registered component type of the view model in its view model-->view map.
+    2. The host looks up the optional platform specific component for the registered component.
+    3. The host instantiates the specific component.
+    4. The host sets the view model on the component.
+        1. If needed, the view model is instantiated via a user-defined factory retrieved from the `Locator` or via the default view model factory.
+    5. The host calls `render()` on the component, obtaining a view tree for it.
+    6. The host recursively traverses the tree, repeating steps 2.2-2.6 for each component in it.
+    7. The host stores the tree.
+    8. The host activates each component in the tree, starting from the bottom.
+        1. The host stores the children of the component in its `children` property. 
+        2. The host calls `onActivated()` on each component in the tree, from bottom to top, recording the registered subscriptions.
