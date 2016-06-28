@@ -21,27 +21,24 @@ build-runtime:
   # Steps make up the actions in your pipeline
   # Read more about steps on our dev center:
   # http://devcenter.wercker.com/docs/steps/index.html
-  cwd: "runtime"
-
   steps:
     # A step that executes `npm install` command
-    - npm-install
+    - npm-install:
+        cwd: runtime/
     # A step that executes `npm test` command
-    - npm-test
+    - npm-test:
+        cwd: runtime/
 
 build-compiler:
   # The steps that will be executed on build
   # Steps make up the actions in your pipeline
   # Read more about steps on our dev center:
   # http://devcenter.wercker.com/docs/steps/index.html
-  cwd: "compiler"
-
   steps:
-    - script:
-        name: Change Directory
-        code: |
-          cd compiler
     # A step that executes `npm install` command
-    - npm-install
+    - npm-install:
+        cwd: compiler/
+
     # A step that executes `npm test` command
-    - npm-test
+    - npm-test:
+        cwd: compiler/
