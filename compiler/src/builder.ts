@@ -21,7 +21,7 @@ export function prop(name: string | ESTree.Identifier, value: string | boolean |
         nameElement = identifier(name);
     }
     var valueElement: ESTree.Expression;
-    if (typeof value === "object" && !(value instanceof RegExp)) {
+    if (typeof value === "object" && !(value instanceof RegExp) && value !== null) {
         valueElement = <any>value;
     } else {
         valueElement = literal(<any>value);
