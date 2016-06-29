@@ -1,26 +1,25 @@
 var webpack = require('webpack');
-var nodeExternals = require('webpack-node-externals');
 
 module.exports = {
     entry: {
-        'rxui.umd': './src/main',
-        'rxui.umd.min': './src/main',
-        'rxui.test.umd': './test/main'
+        'rxui-view.umd': './index',
+        'rxui-view.umd.min': './index',
+        'rxui-view.test.umd': './test/index'
     },
     output: {
         filename: '[name].js',
         path: 'bundles',
-        library: 'RxUI',
+        library: 'RxUIView',
         libraryTarget: 'umd'
     },
     target: 'web',
     externals: [
         {
-            "harmony-reflect": "var null",
             "rxjs/Rx": "var Rx",
             "rxjs/scheduler/asap": "var Rx.Scheduler",
             "rxjs/scheduler/queue": "var Rx.Scheduler",
-            "bluebird": "var Promise"
+            "bluebird": "var Promise",
+            "rxui": "var RxUI"
         },
         /^[a-z\-0-9\/]+$/
     ],

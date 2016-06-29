@@ -60,7 +60,7 @@ module.exports = function(config) {
       'node_modules/bluebird/js/browser/bluebird.js',
       'node_modules/rxjs/bundles/Rx.umd.min.js',
       'node_modules/chai/chai.js',
-      'bundles/rxui.test.umd.js'
+      'bundles/rxui-view.test.umd.js'
     ],
 
     client: {

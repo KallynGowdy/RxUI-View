@@ -3,7 +3,8 @@
         "jsx": "preserve",
         "moduleResolution": "node",
         "sourceMap": true,
-        "module": "commonjs"
+        "module": "commonjs",
+        "declaration": true
     },
     "exclude": [
         "node_modules"

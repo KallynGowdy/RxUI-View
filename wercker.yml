@@ -23,8 +23,11 @@ build-runtime:
   # http://devcenter.wercker.com/docs/steps/index.html
   steps:
     # A step that executes `npm install` command
-    - npm-install:
+    - script:
+        name: NPM Install
         cwd: runtime/
+        code: npm install
+        
     # A step that executes `npm test` command
     - npm-test:
         cwd: runtime/
@@ -36,8 +39,10 @@ build-compiler:
   # http://devcenter.wercker.com/docs/steps/index.html
   steps:
     # A step that executes `npm install` command
-    - npm-install:
+    - script:
+        name: NPM Install
         cwd: compiler/
+        code: npm install
 
     # A step that executes `npm test` command
     - npm-test:
