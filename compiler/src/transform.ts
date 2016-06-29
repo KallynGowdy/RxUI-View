@@ -81,7 +81,7 @@ export interface TransformOptions {
 }
 
 export var defaultTransformOptions: TransformOptions = {
-    renderClass: "Component",
+    renderClass: "ViewHost",
     renderMethod: "render"
 };
 

@@ -3,16 +3,16 @@ import parse from "../src/parse";
 import emit from "../src/emit";
 
 describe("transform", () => {
-    it("should emit a call to Component.render", () => {
+    it("should emit a call to ViewHost.render", () => {
         var result: string = emit(parse(`<MyComponent />`));
 
-        expect(result).to.equal(`Component.render(MyComponent, null);`);
+        expect(result).to.equal(`ViewHost.render(MyComponent, null);`);
     });
     it("should emit binding between the source and target properties", () => {
         var result: string = emit(parse(`<MyComponent target={this.viewModel.source} />`));
 
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: this.viewModel,
         target: 'target',
         sourceProp: 'source'
@@ -23,7 +23,7 @@ Component.render(MyComponent, [{
         var result: string = emit(parse(`<MyComponent target={this.viewModel.source} otherTarget={this.viewModel.otherSource} nonBound={false} />`));
 
         expect(result).to.equal(`
-Component.render(MyComponent, [
+ViewHost.render(MyComponent, [
     {
         source: this.viewModel,
         target: 'target',
@@ -45,7 +45,7 @@ Component.render(MyComponent, [
         var result: string = emit(parse(`<MyComponent target={this.viewModel.arr[10].source} />`));
 
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: this.viewModel.arr[10],
         target: 'target',
         sourceProp: 'source'
@@ -56,7 +56,7 @@ Component.render(MyComponent, [{
         var result: string = emit(parse(`<MyComponent target={this.viewModel.arr[10]} />`));
 
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: this.viewModel.arr[10],
         target: 'target'
     }]);
@@ -66,7 +66,7 @@ Component.render(MyComponent, [{
         var result: string = emit(parse(`<MyComponent target={this.viewModel.arr['the cool property']} />`));
 
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: this.viewModel.arr['the cool property'],
         target: 'target'
     }]);
@@ -75,7 +75,7 @@ Component.render(MyComponent, [{
     it("should emit boolean value to the target property", () => {
         var result: string = emit(parse(`<MyComponent target={false} />`));
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: false,
         target: 'target'
     }]);
@@ -84,7 +84,7 @@ Component.render(MyComponent, [{
     it("should emit string value to the target property", () => {
         var result: string = emit(parse(`<MyComponent target={"str"} />`));
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: 'str',
         target: 'target'
     }]);
@@ -93,7 +93,7 @@ Component.render(MyComponent, [{
     it("should emit number value to the target property", () => {
         var result: string = emit(parse(`<MyComponent target={10.2} />`));
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: 10.2,
         target: 'target'
     }]);
@@ -102,7 +102,7 @@ Component.render(MyComponent, [{
     it("should emit null to the target property", () => {
         var result: string = emit(parse(`<MyComponent target={null} />`));
         expect(result).to.equal(`
-Component.render(MyComponent, [{
+ViewHost.render(MyComponent, [{
         source: null,
         target: 'target'
     }]);
@@ -111,20 +111,20 @@ Component.render(MyComponent, [{
     it("should emit child elements", () => {
         var result: string = emit(parse(`<MyComponent><MyChild /><MyOtherChild /></MyComponent>;`));
         expect(result).to.equal(`
-Component.render(MyComponent, null, [
-    Component.render(MyChild, null),
-    Component.render(MyOtherChild, null)
+ViewHost.render(MyComponent, null, [
+    ViewHost.render(MyChild, null),
+    ViewHost.render(MyOtherChild, null)
 ]);
         `.trim());
     });
     it("should emit child literals", () => {
         var result: string = emit(parse(`<MyComponent>String</MyComponent>;`));
-        expect(result).to.equal(`Component.render(MyComponent, null, ['String']);`)
+        expect(result).to.equal(`ViewHost.render(MyComponent, null, ['String']);`)
     });
     it("should emit child binding expressions", () => {
         var result: string = emit(parse(`<MyComponent>{this.viewModel.source}</MyComponent>;`));
         expect(result).to.equal(`
-    Component.render(MyComponent, null, [{
+    ViewHost.render(MyComponent, null, [{
         source: this.viewModel,
         target: null,
         sourceProp: 'source'
@@ -133,7 +133,7 @@ Component.render(MyComponent, null, [
     it("should emit child literals and binding expressions", () => {
         var result: string = emit(parse(`<MyComponent>This is the number: {this.viewModel.number}!</MyComponent>;`));
         expect(result).to.equal(`
-Component.render(MyComponent, null, [
+ViewHost.render(MyComponent, null, [
     'This is the number: ',
     {
         source: this.viewModel,
@@ -146,13 +146,13 @@ Component.render(MyComponent, null, [
     it("should emit bindings for child elements", () => {
         var result: string = emit(parse(`<MyComponent><MyChild target={this.viewModel.source} /><MyOtherChild /></MyComponent>;`));
         expect(result).to.equal(`
-Component.render(MyComponent, null, [
-    Component.render(MyChild, [{
+ViewHost.render(MyComponent, null, [
+    ViewHost.render(MyChild, [{
             source: this.viewModel,
             target: 'target',
             sourceProp: 'source'
         }]),
-    Component.render(MyOtherChild, null)
+    ViewHost.render(MyOtherChild, null)
 ]);
         `.trim());
     });

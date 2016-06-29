@@ -16,7 +16,7 @@ describe("rxui-view-compiler/gulp/transform", () => {
 
             trans.once("data", (file: any) => {
                 expect(file.isBuffer()).to.be.true;
-                expect(file.contents.toString()).to.equal("Component.render(MyComponent, null);");
+                expect(file.contents.toString()).to.equal("ViewHost.render(MyComponent, null);");
             });
         });
     });
@@ -32,7 +32,7 @@ describe("rxui-view-compiler/gulp/transform", () => {
                 expect(file.isStream()).to.be.true;
 
                 file.contents.pipe(es.wait((err: any, data: any) => {
-                    expect(data.toString()).to.equal("Component.render(MyComponent, null);");
+                    expect(data.toString()).to.equal("ViewHost.render(MyComponent, null);");
                     done();
                 }));
             });
