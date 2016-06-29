@@ -10,6 +10,25 @@ export interface ComponentStatic<TViewModel> {
 }
 
 /**
+ * Defines an interface for objects that represent bindings between
+ * a source property on a view model and a target property on a component. 
+ */
+export interface IComponentBinding {
+    /**
+     * The object that should be bound to the component.
+     */
+    source: any;
+    /**
+     * The property on the source object that should be bound to the component property.
+     */
+    sourceProp: string;
+    /**
+     * The target property on the component that the source property should be bound to.
+     */
+    target: string;
+}
+
+/**
  * Defines an interface that represents a component that is able to render the given view model.
  */
 export interface IComponent<TViewModel> {
