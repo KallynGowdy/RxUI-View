@@ -1,8 +1,11 @@
 {
   "name": "rxui-view-compiler",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "The compiler for RxUI-View JSX",
   "main": "index.js",
+  "bin": {
+    "rxui-view-compile": "bin/compile.js"
+  },
   "scripts": {
     "build": "tsc",
     "build:w": "tsx -w",
@@ -26,12 +29,15 @@
   },
   "homepage": "https://github.com/KallynGowdy/RxUI-View#readme",
   "dependencies": {
-    "escodegen": "^1.8.0"
+    "acorn-jsx": "^3.0.1",
+    "escodegen": "^1.8.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "through2": "^2.0.1"
   },
   "devDependencies": {
-    "acorn-jsx": "^3.0.1",
-    "bluebird": "^3.4.1",
     "chai": "^3.5.0",
+    "event-stream": "^3.3.3",
     "karma": "^1.1.0",
     "mocha": "^2.5.3",
     "typescript": "^1.8.10",

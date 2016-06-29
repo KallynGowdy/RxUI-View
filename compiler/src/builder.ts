@@ -58,3 +58,32 @@ export function arr(...expressions: ESTree.Expression[]): ESTree.ArrayExpression
         elements: expressions
     };
 }
+
+export function member(object: string | ESTree.Expression, property: string | ESTree.Expression): ESTree.MemberExpression {
+    var obj: ESTree.Expression = null;
+    if (typeof object === "string") {
+        obj = identifier(object);
+    } else {
+        obj = object;
+    }
+    var prop: any = null;
+    if (typeof property === "string") {
+        prop = identifier(property);
+    } else {
+        prop = property;
+    }
+    return {
+        type: "MemberExpression",
+        object: obj,
+        property: prop,
+        computed: (prop.type !== "Identifier")
+    }
+}
+
+export function call(callee: ESTree.Expression, ...args: ESTree.Expression[]): ESTree.CallExpression {
+    return {
+        type: "CallExpression",
+        callee: callee,
+        arguments: args
+    }
+}

@@ -143,6 +143,19 @@ Component.render(MyComponent, null, [
     '!'
 ]);`.trim());
     });
+    it("should emit bindings for child elements", () => {
+        var result: string = emit(parse(`<MyComponent><MyChild target={this.viewModel.source} /><MyOtherChild /></MyComponent>;`));
+        expect(result).to.equal(`
+Component.render(MyComponent, null, [
+    Component.render(MyChild, [{
+            source: this.viewModel,
+            target: 'target',
+            sourceProp: 'source'
+        }]),
+    Component.render(MyOtherChild, null)
+]);
+        `.trim());
+    });
     it("should emit ES5 as-is", () => {
         var result: string = emit(parse(`var x = 10;`));
         expect(result).to.equal(`var x = 10;`);

@@ -1,16 +1,7 @@
 var walk = require("acorn/dist/walk");
 import WalkerBase from "./jsx";
 import * as escodegen from "escodegen";
-import {identifier, literal, prop, obj, arr} from "./builder";
-
-var Component: ESTree.Identifier = identifier("Component");
-var render: ESTree.Identifier = identifier("render");
-var ComponentRender: ESTree.MemberExpression = {
-    type: "MemberExpression",
-    object: Component,
-    property: render,
-    computed: false
-};
+import {identifier, literal, prop, obj, arr, member, call} from "./builder";
 
 function nameToString(node: any): string {
     var name: string;
@@ -60,38 +51,44 @@ function mapAttribute(attr: any): any {
     return null;
 }
 
-function mapChild(child: any): any {
+function mapChild(child: any, options: TransformOptions): any {
     if (child.type === "Literal") {
         return child;
     } else if (child.type === "JSXExpressionContainer") {
         return mapExpressionContainer(child, null);
     } else if (child.type === "JSXElement") {
-        return mapElement(child);
+        return mapElement(child, options);
     }
 }
 
-function mapElement(node: any): any {
+function mapElement(node: any, options: TransformOptions): any {
     var openingElement = node.openingElement;
     var name = nameToString(openingElement.name);
     var nameIdentifier: ESTree.Identifier = identifier(name);
     var attributes = node.openingElement.attributes.map((attr: any) => mapAttribute(attr));
     var attributesExpression = arr(...attributes);
-    var children = node.children.map((child: any) => mapChild(child));;
+    var children = node.children.map((child: any) => mapChild(child, options));;
    	var args = [nameIdentifier, attributes.length > 0 ? attributesExpression : identifier("null")];
     if (children.length > 0) {
         args.push(arr(...children));
     }
-    return {
-        type: "CallExpression",
-        callee: ComponentRender,
-        arguments: args
-    };
+    return call(member(options.renderClass, options.renderMethod), ...args);
 }
 
-export default function (tree: ESTree.Program): ESTree.Program {
+export interface TransformOptions {
+    renderClass: string;
+    renderMethod: string;
+}
+
+export var defaultTransformOptions: TransformOptions = {
+    renderClass: "Component",
+    renderMethod: "render"
+};
+
+export function transform(tree: ESTree.Program, options: TransformOptions = defaultTransformOptions): ESTree.Program {
     walk.simple(tree, {
         JSXElement: (node: any, state: any) => {
-            var newNode = mapElement(node);
+            var newNode = mapElement(node, options);
 
             for (var name in node) {
                 if (node.hasOwnProperty(name)) {
