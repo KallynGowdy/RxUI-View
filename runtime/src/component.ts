@@ -5,10 +5,15 @@ export interface IRegisterSubscriptions {
     (sub: Subscription): void;
 }
 
+export interface ComponentStatic<TViewModel> {
+    new (): IComponent<TViewModel>;
+}
+
 /**
  * Defines an interface that represents a component that is able to render the given view model.
  */
 export interface IComponent<TViewModel> {
+
     /**
      * The view model that the component displays.
      * This is the only "state" that the component should contain, and all of the interactions

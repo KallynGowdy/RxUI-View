@@ -30,35 +30,33 @@ export interface ILocator {
 }
 
 interface IRegistration {
-    symbol: symbol;
+    symbol: any;
     factory: () => any;
 }
 
-export class Locator implements ILocator {
-    static current: ILocator = new Locator();
+export class BaseLocator {
+    protected _registrations: any = {};
 
-    private _registrations: any = {};
-
-    register<TService>(symbol: symbol, factory: () => TService): Subscription {
+    protected _register<TService>(key: any, factory: () => TService): Subscription {
         var registration: IRegistration = {
-            symbol: symbol,
+            symbol: key,
             factory: factory
         };
-        if (this._registrations[symbol]) {
-            this._registrations[symbol].unshift(registration);
+        if (this._registrations[key]) {
+            this._registrations[key].unshift(registration);
         } else {
-            this._registrations[symbol] = [registration];
+            this._registrations[key] = [registration];
         }
         return new Subscription(() => {
-            var index = this._registrations[symbol].indexOf(registration);
+            var index = this._registrations[key].indexOf(registration);
             if (index >= 0) {
-                this._registrations[symbol].splice(index, 1);
+                this._registrations[key].splice(index, 1);
             }
         });
     }
 
-    get<TService>(symbol: symbol): TService {
-        var registrations: IRegistration[] = this._registrations[symbol];
+    protected _get<TService>(key: any): TService {
+        var registrations: IRegistration[] = this._registrations[key];
         if (registrations && registrations.length > 0) {
             return registrations[0].factory();
         } else {
@@ -66,13 +64,36 @@ export class Locator implements ILocator {
         }
     }
 
-    getAll<TService>(symbol: symbol): TService[] {
-        var registrations: IRegistration[] = this._registrations[symbol];
+    protected _getAll<TService>(key: any): TService[] {
+        var registrations: IRegistration[] = this._registrations[key];
         if (registrations) {
             return registrations.map(r => r.factory());
         } else {
             return [];
         }
+    }
+}
+
+/**
+ * Defines a class that represents a generic locator.
+ */
+export class Locator extends BaseLocator implements ILocator {
+
+    /**
+     * The current global locator that is being used. 
+     */
+    static current: ILocator = new Locator();
+
+    register<TService>(symbol: symbol, factory: () => TService): Subscription {
+        return super._register(symbol, factory);
+    }
+
+    get<TService>(symbol: symbol): TService {
+        return super._get<TService>(symbol);
+    }
+
+    getAll<TService>(symbol: symbol): TService[] {
+        return super._getAll<TService>(symbol);
     }
 
     static register<TService>(symbol: symbol, factory: () => TService): Subscription {
