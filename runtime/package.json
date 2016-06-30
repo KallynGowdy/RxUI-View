@@ -12,7 +12,8 @@
     "karma": "karma start karma.conf.js",
     "karma:ci": "karma start karma.conf-ci.js",
     "test": "npm run build:package && npm run karma",
-    "test:ci": "npm run build:package && npm run karma:ci"
+    "test:ci": "npm run build:package && npm run karma:ci",
+    "prepublish": "typings install && npm run build:package"
   },
   "repository": {
     "type": "git",

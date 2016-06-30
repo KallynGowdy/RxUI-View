@@ -22,15 +22,20 @@ build-runtime:
   # Read more about steps on our dev center:
   # http://devcenter.wercker.com/docs/steps/index.html
   steps:
-    # A step that executes `npm install` command
+    - script:
+        name: Install TypeScript
+        code: sudo npm install -g typescript
+    - script:
+        name: Install Karma
+        code: sudo npm install -g karma-cli
     - script:
         name: NPM Install
         cwd: runtime/
         code: npm install
-        
-    # A step that executes `npm test` command
-    - npm-test:
+    - script:
+        name: NPM Test
         cwd: runtime/
+        code: npm run test:ci
 
 build-compiler:
   # The steps that will be executed on build
