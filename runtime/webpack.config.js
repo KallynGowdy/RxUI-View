@@ -20,8 +20,7 @@ module.exports = {
             "rxjs/scheduler/queue": "var Rx.Scheduler",
             "bluebird": "var Promise",
             "rxui": "var RxUI"
-        },
-        /^[a-z\-0-9\/]+$/
+        }
     ],
     plugins: [
         new webpack.optimize.UglifyJsPlugin({
