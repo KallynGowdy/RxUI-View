@@ -13,7 +13,8 @@
     "karma:ci": "karma start karma.conf-ci.js",
     "test": "npm run build:package && npm run karma",
     "test:ci": "npm run build:package && npm run karma:ci",
-    "install": "typings install"
+    "typings": "typings install",
+    "install": "npm run typings"
   },
   "repository": {
     "type": "git",
