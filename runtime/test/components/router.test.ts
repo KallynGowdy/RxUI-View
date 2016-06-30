@@ -59,7 +59,7 @@ describe("Router", () => {
                 expect(router.navigationStack.length).to.equal(1);
                 expect(router.navigationStack.getItem(0)).to.equal(vm);
             });
-            it("should change teh currentViewModel property to the new value", () => {
+            it("should change the currentViewModel property to the new value", () => {
                 var router = new RouterViewModel();
                 var vm = new TestViewModel();
                 var vm1 = new TestViewModel();
@@ -72,6 +72,35 @@ describe("Router", () => {
                 router.navigateBack.execute();
 
                 expect(events).to.eql([vm]);
+            });
+        });
+        describe("#navigateAndReset()", () => {
+            it("should remove all view models from the stack and navigate to the given one", () => {
+                var router = new RouterViewModel();
+                var vm = new TestViewModel();
+                var vm1 = new TestViewModel();
+                var final = new TestViewModel();
+                router.navigate.execute(vm);
+                router.navigate.execute(vm1);
+
+                router.navigateAndReset.execute(final);
+
+                expect(router.navigationStack.toArray()).to.eql([final]);
+            });
+            it("should change the currentViewModel property to the new value", () => {
+                var router = new RouterViewModel();
+                var vm = new TestViewModel();
+                var vm1 = new TestViewModel();
+                var final = new TestViewModel();
+                router.navigate.execute(vm);
+                router.navigate.execute(vm1);
+
+                var events = [];
+                router.whenAnyValue(r => r.currentViewModel).skip(1).subscribe(v => events.push(v));
+
+                router.navigateAndReset.execute(final);
+
+                expect(events).to.eql([final]);
             });
         });
     });

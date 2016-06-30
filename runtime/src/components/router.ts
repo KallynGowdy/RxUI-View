@@ -13,6 +13,7 @@ export class RouterViewModel extends ReactiveObject {
 
     navigate: ReactiveCommand<any, {}>;
     navigateBack: ReactiveCommand<{}, any>;
+    navigateAndReset: ReactiveCommand<any, any[]>;
 
     constructor() {
         super();
@@ -22,6 +23,7 @@ export class RouterViewModel extends ReactiveObject {
         var canNavigateBack = this.navigationStack.whenAnyValue(stack => stack.length)
             .map(len => len > 0);
         this.navigateBack = ReactiveCommand.create(() => this._navigateBackImpl(), canNavigateBack);
+        this.navigateAndReset = ReactiveCommand.create(vm => this._navigateAndResetImpl(vm));
 
         this.toProperty(
             this.navigationStack.toObservable().map(arr => arr.length > 0 ? arr[0] : null),
@@ -39,6 +41,13 @@ export class RouterViewModel extends ReactiveObject {
 
     private _navigateBackImpl(): any {
         return this.navigationStack.shift();
+    }
+
+    private _navigateAndResetImpl(viewModel: any): any[] {
+        if (!viewModel) {
+            throw new Error("Cannot navigate to a falsy, null or undefined view model.");
+        }
+        return this.navigationStack.splice(0, this.navigationStack.length, viewModel).toArray();
     }
 }
 
