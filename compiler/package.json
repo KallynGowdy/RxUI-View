@@ -12,6 +12,7 @@
     "build:package": "npm run build && npm run webpack",
     "webpack": "webpack --display-modules",
     "mocha": "mocha test",
+    "typings": "typings install",
     "test": "npm run build && npm run mocha"
   },
   "repository": {

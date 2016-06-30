@@ -37,7 +37,6 @@ jspm_packages
 .node_repl_history
 
 # Compiled files
-**/*.js
 **/*.js.map
 **/*.jsx
 **/*.jsx.map
