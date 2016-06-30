@@ -1,4 +1,5 @@
 import {Subscription} from "rxjs/Rx";
+import {ReactiveArray, ReactiveObject} from "rxui";
 import {IPlatformInfo} from "./platform-info";
 
 export interface IRegisterSubscriptions {
@@ -28,6 +29,8 @@ export interface IComponentBinding {
     target: string;
 }
 
+export type ComponentChild = (string | IComponentBinding | IComponent<any>);
+
 /**
  * Defines an interface that represents a component that is able to render the given view model.
  */
@@ -43,7 +46,7 @@ export interface IComponent<TViewModel> {
     /**
      * The child components that this component houses.
      */
-    children: (string | IComponentBinding | IComponent<any>)[];
+    children: ReactiveArray<ComponentChild>;
 
     /**
      * The component that this component rendered.
@@ -73,7 +76,7 @@ export interface IComponent<TViewModel> {
 /**
  * Defines a base class that represents a component.
  */
-export class Component<TViewModel> implements IComponent<TViewModel> {
+export class Component<TViewModel> extends ReactiveObject implements IComponent<TViewModel> {
     /**
      * The view model that the component displays.
      * This is the only "state" that the component should contain, and all of the interactions
@@ -83,12 +86,13 @@ export class Component<TViewModel> implements IComponent<TViewModel> {
     /**
      * The child components that this component houses.
      */
-    children: (string | IComponentBinding | IComponent<any>)[] = [];
+    children: ReactiveArray<ComponentChild> = new ReactiveArray<ComponentChild>();
 
     /**
      * The component that this component rendered.
      */
-    rendered: IComponent<any>;
+    get rendered(): IComponent<any> { return this.get("rendered"); }
+    set rendered(value: IComponent<any>) { this.set("rendered", value); }
 
     private _callbacks: ((d: IRegisterSubscriptions) => void)[] = [];
 
@@ -115,6 +119,4 @@ export class Component<TViewModel> implements IComponent<TViewModel> {
         if (!callback || typeof callback !== "function") throw new Error("The callback parameter must be a function that is not null or undefined");
         this._callbacks.push(callback);
     }
-
-    
 }

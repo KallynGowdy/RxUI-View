@@ -1,5 +1,5 @@
-import {IComponent, IComponentBinding, IRegisterSubscriptions} from "../component";
-import {ReactiveObject} from "rxui";
+import {IComponent, IComponentBinding, IRegisterSubscriptions, ComponentChild} from "../component";
+import {ReactiveObject, ReactiveArray} from "rxui";
 
 /**
  * Defines a component that is able to create bindings to the given component's view model
@@ -32,7 +32,7 @@ export class BoundComponent<TViewModel> implements IComponent<TViewModel> {
     /**
      * The child components that this component houses.
      */
-    get children(): (string | IComponentBinding | IComponent<any>)[] {
+    get children(): ReactiveArray<ComponentChild> {
         return this._component.children;
     };
 

@@ -17,19 +17,24 @@ class MyComponent extends Component<MyViewModel> {
     onActivated(d: any) {
         super.onActivated(d);
         this.viewModel.activated = true;
+        d(new Subscription(() => this.viewModel.activated = false));
     }
 }
 
-class MyParentComponent extends Component<MyViewModel> {
+class MyParentComponent extends MyComponent {
     render() {
         return <MyChildComponent property={this.viewModel.property} />
     }
 }
-class MyChildViewModel extends ReactiveObject {
-    get property(): string { return this.get("property"); }
-    set property(value: string) { this.set("property", value); }
+class MyChildViewModel extends MyViewModel {
 }
-class MyChildComponent extends Component<MyChildViewModel> { }
+class MyChildComponent extends Component<MyChildViewModel> {
+    onActivated(d: any) {
+        super.onActivated(d);
+        this.viewModel.activated = true;
+        d(new Subscription(() => this.viewModel.activated = false));
+    }
+}
 
 describe("ViewHost", () => {
     describe("constructor()", () => {
@@ -81,6 +86,16 @@ describe("ViewHost", () => {
 
             expect(result.root.viewModel.activated).to.be.true;
         });
+        it("should activate the entire component tree", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
+            var result = host.boot(MyViewModel);
+
+            expect(result.root.viewModel.activated).to.be.true;
+            var child = result.root.children.getItem(0) as IComponent<MyChildViewModel>;
+            expect(child.viewModel.activated).to.be.true;
+        });
         it("should set the rendered component for the booted component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
@@ -106,6 +121,25 @@ describe("ViewHost", () => {
             rootVm.property = "My Value";
             expect(firstVm.property).to.equal("My Value");
         });
+        it("should return a subscription in the result", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
+            var result = host.boot(MyViewModel);
+
+            expect(result.sub).to.be.instanceOf(Subscription);
+        });
+        it("should dispose all of the registered subscriptions", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            var result = host.boot(MyViewModel);
+
+            result.sub.unsubscribe();
+
+            expect(result.root.viewModel.activated).to.be.false;
+            var child = result.root.children.getItem(0) as IComponent<MyChildViewModel>;
+            expect(child.viewModel.activated).to.be.false;
+        });
     });
     describe(".render()", () => {
         it("should assign the children to the component.children property", () => {
@@ -121,9 +155,7 @@ describe("ViewHost", () => {
                 );
 
                 expect(result.children.length).to.equal(3);
-                expect(result.children[0]).to.be.string;
-                expect(result.children[1]).to.be.instanceOf(MyChildComponent);
-                expect(result.children[2]).to.be.string;
+                expect(result.children.getItem(1)).to.be.instanceOf(MyChildComponent);
             } finally {
                 sub.unsubscribe();
             }
@@ -141,12 +173,10 @@ describe("ViewHost", () => {
                 );
 
                 expect(result.children.length).to.equal(3);
-                expect(result.children[0]).to.be.string;
-                expect(result.children[1]).to.eql({
+                expect(result.children.getItem(1)).to.eql({
                     source: true, // (10 mod 2 === 0) === true
                     target: null
                 });
-                expect(result.children[2]).to.be.string;
             } finally {
                 sub.unsubscribe();
             }

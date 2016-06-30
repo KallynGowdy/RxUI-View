@@ -1,8 +1,9 @@
-import {IComponent, IComponentBinding, ComponentStatic, Component} from "./component";
+import {IComponent, IComponentBinding, ComponentStatic, Component, ComponentChild} from "./component";
 import {BaseLocator, Locator} from "./locator";
 import {ComponentLocator} from "./component-locator";
 import {BoundComponent} from "./components/bound-component";
 import {Subscription} from "rxjs/Rx";
+import {ReactiveArray, ReactiveObject} from "rxui";
 
 export interface ViewHostRenderSignature {
     /**
@@ -11,7 +12,7 @@ export interface ViewHostRenderSignature {
      * @param bindings The bindings that should be made between an object and the created component.
      * @param children The children that the component should have.
      */
-    <TViewModel>(component: ComponentStatic<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
+    <TViewModel>(component: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
 }
 
 /**
@@ -32,6 +33,16 @@ export interface IBootResult<TViewModel> {
 
 export interface ViewModelStatic<TViewModel> {
     new (): TViewModel;
+}
+
+export interface ComponentOrViewModelStatic<TViewModel> {
+    new (): TViewModel | IComponent<TViewModel>;
+}
+
+export interface ActivatedComponent<TViewModel> {
+    component: IComponent<TViewModel>;
+    rendered: IComponent<any>;
+    sub: Subscription;
 }
 
 /**
@@ -64,37 +75,49 @@ export var ViewHostSymbol = Symbol("ViewHost");
  * View hosts are in charge of creating components, activating them, and binding them to view models. 
  */
 export class ViewHost extends BaseLocator implements IViewHost {
+    activatedComponents: any = {};
+
     constructor() {
         super();
     }
 
     boot<TViewModel>(viewModel: ViewModelStatic<TViewModel>): IBootResult<TViewModel> {
         let sub = Locator.register(ViewHostSymbol, () => this);
-        try {
-            let componentConstructor = this._getComponentConstructor(viewModel);
-            var rendered = ViewHost.render(componentConstructor, null);
-            return {
-                root: rendered,
-                sub: new Subscription()
-            };
-        } finally {
-            sub.unsubscribe();
-        }
+        let componentConstructor = this._getComponentConstructor(viewModel);
+        var rendered = ViewHost.render(componentConstructor, null);
+        return {
+            root: rendered,
+            sub: new Subscription(() => {
+                sub.unsubscribe();
+                for (var component in this.activatedComponents) {
+                    this._deactivateComponent(component);
+                }
+            })
+        };
     }
 
-    render<TViewModel>(component: ComponentStatic<TViewModel>, bindings: IComponentBinding[], children?: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel> {
-        var viewModel = this._getViewModelConstructor(component);
+    render<TViewModel>(componentOrViewModel: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
+        var viewModel = this._getViewModelConstructor<TViewModel>(<any>componentOrViewModel);
+        var component: ComponentStatic<TViewModel>;
+        if (viewModel) {
+            component = <any>componentOrViewModel;
+        } else {
+            component = this._getComponentConstructor<TViewModel>(<any>componentOrViewModel);
+            viewModel = <any>componentOrViewModel;
+        }
+        if (!component) {
+            throw new Error(`No found registration for the given component/view model constructor: ${componentOrViewModel}`);
+        }
         let built = this._buildComponent(component);
         this._assignViewModel(built, viewModel);
         this._assignChildren(built, children);
         let bound = this._bindComponent(built, bindings);
         this._buildViewTree(built);
-        let subs: Subscription[] = [];
-        bound.onActivated(s => subs.push(s));
+        this._activateComponent(bound);
         return bound;
     }
 
-    static render<TViewModel>(component: ComponentStatic<TViewModel>, bindings: IComponentBinding[], children?: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel> {
+    static render<TViewModel>(component: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
         var host = Locator.get<ViewHost>(ViewHostSymbol);
         if (host) {
             return host.render(component, bindings, children);
@@ -112,6 +135,43 @@ export class ViewHost extends BaseLocator implements IViewHost {
         });
     }
 
+    protected _deactivateComponent<TViewModel>(component: any): void {
+        var activated: ActivatedComponent<TViewModel> = this.activatedComponents[<any>component];
+        if (activated) {
+            activated.component.children.forEach(c => this._deactivateComponent(c));
+            this._deactivateComponent(activated.rendered);
+            activated.sub.unsubscribe();
+            delete this.activatedComponents[component];
+        }
+    }
+
+    protected _activateComponent<TViewModel>(component: IComponent<TViewModel>): void {
+        let subs: Subscription[] = [];
+        component.onActivated(s => subs.push(s));
+        subs.push(component.children.changed
+            .filter(c => c.removedItems.length > 0)
+            .flatMap(c => c.removedItems)
+            .subscribe(removed => this._deactivateComponent(removed)));
+        if (component instanceof Component) {
+            var reactiveComponent = <Component<TViewModel>>component;
+            subs.push(reactiveComponent.whenAnyValue(c => c.rendered)
+                .skip(1)
+                .subscribe(r => {
+                    var activated: ActivatedComponent<TViewModel> = this.activatedComponents[<any>component];
+                    if (activated.rendered) {
+                        this._deactivateComponent(activated.rendered);
+                    }
+                }));
+        }
+        this.activatedComponents[<any>component] = {
+            component: component,
+            rendered: component.rendered,
+            sub: new Subscription(() => {
+                subs.forEach(s => s.unsubscribe());
+            })
+        }
+    }
+
     protected _bindComponent<TViewModel>(component: IComponent<TViewModel>, bindings: IComponentBinding[]): IComponent<TViewModel> {
         if (bindings) {
             return new BoundComponent(component, bindings);
@@ -127,11 +187,12 @@ export class ViewHost extends BaseLocator implements IViewHost {
         }
     }
 
-    protected _assignChildren<TViewModel>(component: IComponent<TViewModel>, children: (string | IComponentBinding | IComponent<any>)[]): void {
-        if (children) {
-            component.children = children;
+    protected _assignChildren<TViewModel>(component: IComponent<TViewModel>, children: ComponentChild[]): void {
+        var c = children || [];
+        if (component.children) {
+            component.children.splice(0, component.children.length, ...c);
         } else {
-            component.children = [];
+            component.children = ReactiveArray.from(c);
         }
     }
 
@@ -149,7 +210,7 @@ export class ViewHost extends BaseLocator implements IViewHost {
         if (componentConstructor) {
             return componentConstructor;
         } else {
-            throw new Error(`No found registration for the given ViewModel constructor: ${viewModel}`);
+            return null;
         }
     }
 
@@ -158,7 +219,7 @@ export class ViewHost extends BaseLocator implements IViewHost {
         if (viewModel) {
             return viewModel;
         } else {
-            throw new Error(`No found registration for the given component constructor: ${component}`);
+            return null;
         }
     }
 }

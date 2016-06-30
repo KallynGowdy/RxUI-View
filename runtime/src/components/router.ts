@@ -1,5 +1,5 @@
-import {Component} from "../component";
-import {IViewHost} from "../view-host";
+import {Component, IRegisterSubscriptions} from "../component";
+import {IViewHost, ViewHost} from "../view-host";
 import {ReactiveObject, ReactiveCommand, ReactiveArray} from "rxui";
 
 /**
@@ -52,7 +52,14 @@ export class RouterViewModel extends ReactiveObject {
 }
 
 export class Router extends Component<RouterViewModel> {
-
+    onActivated(d: IRegisterSubscriptions): void {
+        d(this.viewModel
+            .whenAnyValue(vm => vm.currentViewModel)
+            .distinctUntilChanged()
+            .filter(vm => vm !== null)
+            .map(vm => ViewHost.render(vm, null))
+            .subscribe(rendered => this.rendered = rendered));
+    }
 }
 
 export function registerRouter(host: IViewHost) {
