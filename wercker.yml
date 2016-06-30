@@ -31,7 +31,7 @@ build-runtime:
     - script:
         name: NPM Install
         cwd: runtime/
-        code: npm install
+        code: npm install --quiet
     - script:
         name: NPM Test
         cwd: runtime/
@@ -47,7 +47,7 @@ build-compiler:
     - script:
         name: NPM Install
         cwd: compiler/
-        code: npm install
+        code: npm install --quiet
 
     # A step that executes `npm test` command
     - npm-test:
