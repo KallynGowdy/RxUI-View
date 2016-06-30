@@ -41,6 +41,16 @@ export interface IComponent<TViewModel> {
     viewModel: TViewModel;
 
     /**
+     * The child components that this component houses.
+     */
+    children: (string | IComponentBinding | IComponent<any>)[];
+
+    /**
+     * The component that this component rendered.
+     */
+    rendered: IComponent<any>;
+
+    /**
      * Determines if the component supports the platform represented by the given info.
      */
     doesSupportPlatform(platformInfo: any): boolean;
@@ -54,6 +64,8 @@ export interface IComponent<TViewModel> {
     /**
      * Builds the component tree that should be used as the view for the given view model.
      * If omitted, a platform-specific component must be selected.
+     * Components should not assume that they have been activated at this point.
+     * If they need to do any direct setup logic, they should do it in the constructor.
      */
     render?(): IComponent<any>;
 }
@@ -68,6 +80,15 @@ export class Component<TViewModel> implements IComponent<TViewModel> {
      * should be piped through the view model.
      */
     viewModel: TViewModel;
+    /**
+     * The child components that this component houses.
+     */
+    children: (string | IComponentBinding | IComponent<any>)[] = [];
+
+    /**
+     * The component that this component rendered.
+     */
+    rendered: IComponent<any>;
 
     private _callbacks: ((d: IRegisterSubscriptions) => void)[] = [];
 
@@ -94,4 +115,6 @@ export class Component<TViewModel> implements IComponent<TViewModel> {
         if (!callback || typeof callback !== "function") throw new Error("The callback parameter must be a function that is not null or undefined");
         this._callbacks.push(callback);
     }
+
+    
 }

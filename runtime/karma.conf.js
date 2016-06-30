@@ -16,6 +16,7 @@ module.exports = function(config) {
       'node_modules/bluebird/js/browser/bluebird.js',
       'node_modules/rxjs/bundles/Rx.umd.js',
       'node_modules/chai/chai.js',
+      'node_modules/rxui/bundles/RxUI.umd.js',
       'bundles/rxui-view.test.umd.js'
     ],
 

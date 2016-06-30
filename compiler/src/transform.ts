@@ -76,11 +76,13 @@ function mapElement(node: any, options: TransformOptions): any {
 }
 
 export interface TransformOptions {
+    renderNamespace: string;
     renderClass: string;
     renderMethod: string;
 }
 
 export var defaultTransformOptions: TransformOptions = {
+    renderNamespace: "RxUIView",
     renderClass: "ViewHost",
     renderMethod: "render"
 };
