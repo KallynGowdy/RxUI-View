@@ -26,8 +26,7 @@ class MyParentComponent extends MyComponent {
         return <MyChildComponent property={this.viewModel.property} />
     }
 }
-class MyChildViewModel extends MyViewModel {
-}
+class MyChildViewModel extends MyViewModel { }
 class MyChildComponent extends Component<MyChildViewModel> {
     onActivated(d: any) {
         super.onActivated(d);
@@ -35,6 +34,7 @@ class MyChildComponent extends Component<MyChildViewModel> {
         d(new Subscription(() => this.viewModel.activated = false));
     }
 }
+class MySpecialChildComponent extends MyChildComponent { }
 
 describe("ViewHost", () => {
     describe("constructor()", () => {
@@ -193,6 +193,18 @@ describe("ViewHost", () => {
                 expect(children.every(c => !c.viewModel.activated)).to.be.true;
             } finally {
                 result.sub.unsubscribe();
+            }
+        });
+        it("should render the registerd specialized component", () => {
+            var host = new ViewHost();
+            host.register(MyChildViewModel, MyChildComponent);
+            var sub = ComponentLocator.current.register(MyChildComponent, MySpecialChildComponent);
+            var result = host.boot(MyChildViewModel);
+            try {
+                expect(result.root).to.be.instanceOf(MySpecialChildComponent);
+            } finally {
+                result.sub.unsubscribe();
+                sub.unsubscribe();
             }
         });
     });
