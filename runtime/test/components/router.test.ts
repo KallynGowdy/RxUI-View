@@ -2,16 +2,16 @@ import {ComponentLocator} from "../../src/component-locator";
 import {Locator} from "../../src/locator";
 import {Component, IComponent} from "../../src/component";
 import {BoundComponent} from "../../src/components/bound-component";
-import {RouterViewModel} from "../../src/components/router";
+import {RouterViewModel, Router} from "../../src/components/router";
 import {ViewHost, ViewHostSymbol} from "../../src/view-host";
 import {ReactiveObject} from "rxui";
 import {Subscription} from "rxjs/Rx";
+import {testComponent} from "../../src/view-host-utils";
 import {expect} from "chai";
 import "../../src/view-host-global";
 
-class TestViewModel {
-
-}
+class TestViewModel {}
+class TestComponent extends Component<TestViewModel> {}
 
 describe("Router", () => {
     describe("ViewModel", () => {
@@ -101,6 +101,23 @@ describe("Router", () => {
                 router.navigateAndReset.execute(final);
 
                 expect(events).to.eql([final]);
+            });
+        });
+    });
+    describe("Component", () => {
+        it("should set the currentViewModel to its rendered property", () => {
+            testComponent(host => {
+                host.register(TestViewModel, TestComponent);
+                var router = new Router();
+                var vm = new RouterViewModel();
+                router.viewModel = vm;
+                router.onActivated(s => {});
+
+                expect(router.rendered).to.be.null;
+
+                vm.currentViewModel = new TestViewModel();
+                
+                expect(router.rendered).to.be.instanceOf(TestComponent);
             });
         });
     });

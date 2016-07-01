@@ -166,19 +166,14 @@ export class ViewHost extends BaseLocator implements IViewHost {
         let subs: Subscription[] = [];
         component.onActivated(s => subs.push(s));
         subs.push(component.children.changed
-            .filter(c => {
-                console.log("filter");
-                return c.removedItems.length > 0;
-            })
+            .filter(c => c.removedItems.length > 0)
             .flatMap(c => c.removedItems)
-            .subscribe(removed => {
-                console.log("removed");
-                this._deactivateComponent(removed);
-            }));
+            .subscribe(removed => this._deactivateComponent(removed)));
         if (component instanceof Component) {
             var reactiveComponent = <Component<TViewModel>>component;
             subs.push(reactiveComponent.whenAnyValue(c => c.rendered)
                 .skip(1)
+                .filter(r => r !== null)
                 .subscribe(r => {
                     var activated: ActivatedComponent<TViewModel> = (<any>component).____activation;
                     if (activated && activated.rendered) {
