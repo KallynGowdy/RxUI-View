@@ -12,6 +12,10 @@ export interface ViewHostRenderSignature {
      * @param bindings The bindings that should be made between an object and the created component.
      * @param children The children that the component should have.
      */
+    <TViewModel>(component: ComponentStatic<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
+    <TViewModel>(component: ViewModelStatic<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
+    <TViewModel>(component: IComponent<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
+    <TViewModel>(component: TViewModel, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
     <TViewModel>(component: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children: (string | IComponentBinding | IComponent<any>)[]): IComponent<TViewModel>
 }
 
@@ -44,6 +48,8 @@ export interface ActivatedComponent<TViewModel> {
     sub: Subscription;
 }
 
+export type ComponentOrViewModel<TViewModel> = ViewModelStatic<TViewModel> | ComponentStatic<TViewModel> | IComponent<TViewModel> | TViewModel;
+
 /**
  * Defines an interface for a class that is able to host and render components.
  * This object is in charge of managing the lifecycle of all of the components under its control.
@@ -54,7 +60,16 @@ export interface IViewHost {
      * and rigging all of the bindings.
      * @param viewModel The view model that should be rigged.
      */
-    boot<TViewModel>(viewModel: ViewModelStatic<TViewModel>): IBootResult<TViewModel>;
+    boot<TViewModel>(component: ComponentStatic<TViewModel>): IBootResult<TViewModel>
+    boot<TViewModel>(viewModel: ViewModelStatic<TViewModel>): IBootResult<TViewModel>
+    boot<TViewModel>(viewModel: TViewModel): IBootResult<TViewModel>;
+    boot<TViewModel>(componentOrViewModel: ComponentOrViewModel<TViewModel>): IBootResult<TViewModel>;
+
+    /**
+     * Deactivates the host by shutting down each of the activated components and releasing
+     * unneeded handles.
+     */
+    shutdown(): void;
 
     render: ViewHostRenderSignature;
 
@@ -80,35 +95,34 @@ export class ViewHost extends BaseLocator implements IViewHost {
         super();
     }
 
-    boot<TViewModel>(viewModel: ViewModelStatic<TViewModel>): IBootResult<TViewModel> {
+    boot<TViewModel>(component: ComponentStatic<TViewModel>): IBootResult<TViewModel>
+    boot<TViewModel>(viewModel: ViewModelStatic<TViewModel>): IBootResult<TViewModel>
+    boot<TViewModel>(viewModel: TViewModel): IBootResult<TViewModel>;
+    boot<TViewModel>(componentOrViewModel: ComponentOrViewModel<TViewModel>): IBootResult<TViewModel> {
         let sub = Locator.register(ViewHostSymbol, () => this);
-        let componentConstructor = this._getComponentConstructor(viewModel);
-        var rendered = ViewHost.render(componentConstructor, null);
-        return {
-            root: rendered,
-            sub: new Subscription(() => {
-                sub.unsubscribe();
-                for (var i = this.activatedComponents.length - 1; i >= 0; i--) {
-                    this._deactivateComponent(this.activatedComponents[i]);
-                }
-            })
-        };
+        try {
+            var rendered = ViewHost.render<TViewModel>(componentOrViewModel, null);
+            return {
+                root: rendered,
+                sub: new Subscription(() => {
+                    sub.unsubscribe();
+                    this.shutdown();
+                })
+            };
+        } catch (ex) {
+            sub.unsubscribe();
+            throw ex;
+        }
     }
 
-    render<TViewModel>(componentOrViewModel: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
-        var viewModel = this._getViewModelConstructor<TViewModel>(<any>componentOrViewModel);
-        var component: ComponentStatic<TViewModel>;
-        if (viewModel) {
-            component = <any>componentOrViewModel;
-        } else {
-            component = this._getComponentConstructor<TViewModel>(<any>componentOrViewModel);
-            viewModel = <any>componentOrViewModel;
+    shutdown(): void {
+        for (var i = this.activatedComponents.length - 1; i >= 0; i--) {
+            this._deactivateComponent(this.activatedComponents[i]);
         }
-        if (!component) {
-            throw new Error(`No found registration for the given component/view model constructor: ${componentOrViewModel}`);
-        }
-        let built = this._buildComponent(component);
-        this._assignViewModel(built, viewModel);
+    }
+
+    render<TViewModel>(componentOrViewModel: ComponentOrViewModel<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
+        let built = this._buildComponent<TViewModel>(componentOrViewModel);
         this._assignChildren(built, children);
         let bound = this._bindComponent(built, bindings);
         this._buildViewTree(built);
@@ -116,18 +130,18 @@ export class ViewHost extends BaseLocator implements IViewHost {
         return bound;
     }
 
-    static render<TViewModel>(component: ComponentOrViewModelStatic<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
+    static render<TViewModel>(component: ComponentOrViewModel<TViewModel>, bindings: IComponentBinding[], children?: ComponentChild[]): IComponent<TViewModel> {
         var host = Locator.get<ViewHost>(ViewHostSymbol);
         if (host) {
-            return host.render(component, bindings, children);
+            return host.render<TViewModel>(component, bindings, children);
         } else {
             throw new Error("No ViewHost has currently been registered with the current Locator, so no components can be rendered via this method. Either register a host with the current Locator using Locator.current.register(ViewHostSymbol, () => host) or call host.boot(RootComponent)");
         }
     }
 
     register<TViewModel>(viewModelConstructor: ViewModelStatic<TViewModel>, componentConstructor: ComponentStatic<TViewModel>): Subscription {
-        let sub1 = super._register(viewModelConstructor, () => componentConstructor);
-        let sub2 = super._register(componentConstructor, () => viewModelConstructor);
+        let sub1 = super._register(viewModelConstructor + "ViewModel", () => componentConstructor);
+        let sub2 = super._register(componentConstructor + "Component", () => viewModelConstructor);
         return new Subscription(() => {
             sub1.unsubscribe();
             sub2.unsubscribe();
@@ -192,8 +206,7 @@ export class ViewHost extends BaseLocator implements IViewHost {
 
     protected _buildViewTree<TViewModel>(component: IComponent<TViewModel>): void {
         if (component.render) {
-            var created = component.render();
-            component.rendered = created;
+            component.render();
         }
     }
 
@@ -211,12 +224,53 @@ export class ViewHost extends BaseLocator implements IViewHost {
         component.viewModel = vm;
     }
 
-    protected _buildComponent<TViewModel>(component: ComponentStatic<TViewModel>): IComponent<TViewModel> {
-        return ComponentLocator.current.get(component);
+    protected _buildComponent<TViewModel>(componentOrViewModel: ComponentOrViewModel<TViewModel>): IComponent<TViewModel> {
+        var viewModelConstructor = this._getViewModelConstructor<TViewModel>(<any>componentOrViewModel);
+        var componentConstructor: ComponentStatic<TViewModel>;
+        var viewModel: TViewModel;
+        var component: IComponent<TViewModel>;
+        if (viewModelConstructor) {
+            // We were given a component constructor
+            componentConstructor = <any>componentOrViewModel;
+            viewModel = new viewModelConstructor();
+        } else {
+            // We were either given a view model constructor or a view model/component instance
+            componentConstructor = this._getComponentConstructor<TViewModel>(<any>componentOrViewModel);
+            if (componentConstructor) {
+                viewModelConstructor = <any>componentOrViewModel;
+                viewModel = new viewModelConstructor();
+            } else {
+                // We were given an instance
+                componentConstructor = this._getComponentConstructor<TViewModel>((<any>componentOrViewModel).constructor);
+                if (componentConstructor) {
+                    // We were given a view model instance
+                    viewModel = <any>componentOrViewModel;
+                } else if (componentOrViewModel instanceof Component) {
+                    // We were given a component instance
+                    component = <any>componentOrViewModel;
+                    if (!component.viewModel) {
+                        viewModelConstructor = this._getViewModelConstructor<TViewModel>((<any>component).constructor);
+                        if (viewModelConstructor) {
+                            component.viewModel = new viewModelConstructor();
+                        } else {
+                            throw new Error(`No registration found for the given component's view model`);
+                        }
+                    }
+                }
+            }
+        }
+        if (!componentConstructor && !component) {
+            throw new Error(`No registration found for the given component/view model constructor: ${componentOrViewModel}`);
+        }
+        if (!component) {
+            component = ComponentLocator.current.get(componentConstructor);
+            component.viewModel = viewModel;
+        }
+        return component;
     }
 
     protected _getComponentConstructor<TViewModel>(viewModel: ViewModelStatic<TViewModel>): ComponentStatic<TViewModel> {
-        var componentConstructor = this._get<ComponentStatic<TViewModel>>(viewModel);
+        var componentConstructor = this._get<ComponentStatic<TViewModel>>(viewModel + "ViewModel");
         if (componentConstructor) {
             return componentConstructor;
         } else {
@@ -225,7 +279,7 @@ export class ViewHost extends BaseLocator implements IViewHost {
     }
 
     protected _getViewModelConstructor<TViewModel>(component: ComponentStatic<TViewModel>): ViewModelStatic<TViewModel> {
-        var viewModel = this._get<ViewModelStatic<TViewModel>>(component);
+        var viewModel = this._get<ViewModelStatic<TViewModel>>(component + "Component");
         if (viewModel) {
             return viewModel;
         } else {

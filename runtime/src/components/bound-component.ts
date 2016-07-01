@@ -58,6 +58,10 @@ export class BoundComponent<TViewModel> implements IComponent<TViewModel> {
         this._component.onActivated(d);
     }
 
+    render() {
+        this._component.render();
+    }
+
     _setupBindings(d: IRegisterSubscriptions): void {
         this._bindings.forEach(b => this._setupBinding(b, d));
     }

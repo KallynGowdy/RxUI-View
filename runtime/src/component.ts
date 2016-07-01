@@ -70,13 +70,13 @@ export interface IComponent<TViewModel> {
      * Components should not assume that they have been activated at this point.
      * If they need to do any direct setup logic, they should do it in the constructor.
      */
-    render?(): IComponent<any>;
+    render(): void;
 }
 
 /**
  * Defines a base class that represents a component.
  */
-export class Component<TViewModel> extends ReactiveObject implements IComponent<TViewModel> {
+export abstract class Component<TViewModel> extends ReactiveObject implements IComponent<TViewModel> {
     /**
      * The view model that the component displays.
      * This is the only "state" that the component should contain, and all of the interactions
@@ -94,8 +94,6 @@ export class Component<TViewModel> extends ReactiveObject implements IComponent<
     get rendered(): IComponent<any> { return this.get("rendered"); }
     set rendered(value: IComponent<any>) { this.set("rendered", value); }
 
-    private _callbacks: ((d: IRegisterSubscriptions) => void)[] = [];
-
     /**
      * Determines if the component supports the platform represented by the given info.
      */
@@ -108,15 +106,13 @@ export class Component<TViewModel> extends ReactiveObject implements IComponent<
      * @param d A function that, when called, registers a subscription that will be unsubscribed when the component is deactivated.
      */
     onActivated(d: IRegisterSubscriptions): void {
-        this._callbacks.forEach(c => c(d));
     }
 
-    /**
-     * Registers a callback that is called after this component has been activated.
-     * @param callback A function that is called after this component has been activated.
-     */
-    whenActivated(callback: (d: IRegisterSubscriptions) => void): void {
-        if (!callback || typeof callback !== "function") throw new Error("The callback parameter must be a function that is not null or undefined");
-        this._callbacks.push(callback);
+    render() {
+        this.rendered = this._render();
+    }
+
+    _render(): IComponent<any> {
+        return null;
     }
 }
