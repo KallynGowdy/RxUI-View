@@ -93,7 +93,7 @@ describe("ViewHost", () => {
             var result = host.boot(MyViewModel);
 
             expect(result.root.viewModel.activated).to.be.true;
-            var child = result.root.children.getItem(0) as IComponent<MyChildViewModel>;
+            var child = result.root.rendered as IComponent<MyChildViewModel>;
             expect(child.viewModel.activated).to.be.true;
         });
         it("should set the rendered component for the booted component", () => {
@@ -132,13 +132,39 @@ describe("ViewHost", () => {
         it("should dispose all of the registered subscriptions", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
 
             result.sub.unsubscribe();
 
             expect(result.root.viewModel.activated).to.be.false;
-            var child = result.root.children.getItem(0) as IComponent<MyChildViewModel>;
+            var child = result.root.rendered as IComponent<MyChildViewModel>;
             expect(child.viewModel.activated).to.be.false;
+        });
+        it("should detect changes to #rendered and dispose of the displaced component", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
+            var result = host.boot(MyViewModel);
+
+            var child = result.root.rendered as IComponent<MyChildViewModel>;
+            expect(child.viewModel.activated).to.be.true;
+
+            result.root.rendered = <MyChildComponent />;
+
+            expect(result.root.viewModel.activated).to.be.true;
+            expect(child.viewModel.activated).to.be.false;
+        });
+        it("should handle multiple changes to #rendered and dispose of each displaced component", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
+            var result = host.boot(MyViewModel);
+            var children = [result.root.rendered as IComponent<MyChildViewModel>];
+            children.push(result.root.rendered = <MyChildComponent />);
+            result.root.rendered = <MyChildComponent />;
+
+            expect(children.every(c => !c.viewModel.activated)).to.be.true;
         });
     });
     describe(".render()", () => {

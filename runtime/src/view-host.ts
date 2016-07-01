@@ -40,7 +40,6 @@ export interface ComponentOrViewModelStatic<TViewModel> {
 }
 
 export interface ActivatedComponent<TViewModel> {
-    component: IComponent<TViewModel>;
     rendered: IComponent<any>;
     sub: Subscription;
 }
@@ -75,7 +74,7 @@ export var ViewHostSymbol = Symbol("ViewHost");
  * View hosts are in charge of creating components, activating them, and binding them to view models. 
  */
 export class ViewHost extends BaseLocator implements IViewHost {
-    activatedComponents: any = {};
+    activatedComponents: IComponent<any>[] = [];
 
     constructor() {
         super();
@@ -89,8 +88,8 @@ export class ViewHost extends BaseLocator implements IViewHost {
             root: rendered,
             sub: new Subscription(() => {
                 sub.unsubscribe();
-                for (var component in this.activatedComponents) {
-                    this._deactivateComponent(component);
+                for (var i = this.activatedComponents.length - 1; i >= 0; i--) {
+                    this._deactivateComponent(this.activatedComponents[i]);
                 }
             })
         };
@@ -136,12 +135,16 @@ export class ViewHost extends BaseLocator implements IViewHost {
     }
 
     protected _deactivateComponent<TViewModel>(component: any): void {
-        var activated: ActivatedComponent<TViewModel> = this.activatedComponents[<any>component];
-        if (activated) {
-            activated.component.children.forEach(c => this._deactivateComponent(c));
+        var c: any = component;
+        if (c && c.____activation) {
+            var activated: ActivatedComponent<TViewModel> = c.____activation;
+            component.children.forEach(c => this._deactivateComponent(c));
             this._deactivateComponent(activated.rendered);
             activated.sub.unsubscribe();
-            delete this.activatedComponents[component];
+            var index = this.activatedComponents.indexOf(component);
+            if (index >= 0) {
+                this.activatedComponents.splice(0, 1);
+            }
         }
     }
 
@@ -157,19 +160,20 @@ export class ViewHost extends BaseLocator implements IViewHost {
             subs.push(reactiveComponent.whenAnyValue(c => c.rendered)
                 .skip(1)
                 .subscribe(r => {
-                    var activated: ActivatedComponent<TViewModel> = this.activatedComponents[<any>component];
-                    if (activated.rendered) {
+                    var activated: ActivatedComponent<TViewModel> = (<any>component).____activation;
+                    if (activated && activated.rendered) {
                         this._deactivateComponent(activated.rendered);
+                        activated.rendered = r;
                     }
                 }));
         }
-        this.activatedComponents[<any>component] = {
-            component: component,
+        (<any>component).____activation = <ActivatedComponent<TViewModel>>{
             rendered: component.rendered,
             sub: new Subscription(() => {
                 subs.forEach(s => s.unsubscribe());
             })
-        }
+        };
+        this.activatedComponents.push(component);
     }
 
     protected _bindComponent<TViewModel>(component: IComponent<TViewModel>, bindings: IComponentBinding[]): IComponent<TViewModel> {

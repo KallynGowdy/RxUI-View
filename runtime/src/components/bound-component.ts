@@ -11,7 +11,6 @@ export class BoundComponent<TViewModel> implements IComponent<TViewModel> {
     private _bindings: IComponentBinding[];
 
     constructor(component: IComponent<TViewModel>, bindings: IComponentBinding[]) {
-        console.log("Create");
         this._component = component;
         this._bindings = bindings || [];
     }
@@ -55,7 +54,6 @@ export class BoundComponent<TViewModel> implements IComponent<TViewModel> {
      * @param d A function that, when called, registers a subscription that will be unsubscribed when the component is deactivated.
      */
     onActivated(d: IRegisterSubscriptions): void {
-        console.log("Setup Bindings");
         this._setupBindings(d);
         this._component.onActivated(d);
     }
