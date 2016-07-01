@@ -2,8 +2,8 @@
   "globalDependencies": {
     "chai": "registry:dt/chai#3.4.0+20160601211834",
     "core-js": "registry:dt/core-js#0.0.0+20160602141332",
-    "es6-shim": "registry:dt/es6-shim#0.31.2+20160602141504",
     "mocha": "registry:dt/mocha#2.2.5+20160619032855",
-    "node": "registry:dt/node#6.0.0+20160621231320"
+    "node": "registry:dt/node#6.0.0+20160621231320",
+    "proxy-shim": "github:KallynGowdy/RxUI/typings/proxy-shim/proxy-shim.d.ts#c3ebb44c3e3e590861d40bcb0877072ba38d7b94"
   }
 }

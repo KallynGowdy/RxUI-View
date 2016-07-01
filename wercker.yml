@@ -16,34 +16,24 @@ box: node
 
     # - mongo
     # http://devcenter.wercker.com/docs/services/mongodb.html
-build-runtime:
+build:
   # The steps that will be executed on build
   # Steps make up the actions in your pipeline
   # Read more about steps on our dev center:
   # http://devcenter.wercker.com/docs/steps/index.html
   steps:
-    # A step that executes `npm install` command
     - script:
-        name: NPM Install
-        cwd: runtime/
-        code: npm install
-        
-    # A step that executes `npm test` command
+        name: Install Compiler Deps
+        cwd: compiler/
+        code: npm install --quiet && npm run typings
     - npm-test:
-        cwd: runtime/
-
-build-compiler:
-  # The steps that will be executed on build
-  # Steps make up the actions in your pipeline
-  # Read more about steps on our dev center:
-  # http://devcenter.wercker.com/docs/steps/index.html
-  steps:
-    # A step that executes `npm install` command
+        name: Test Compiler
+        cwd: compiler/
     - script:
-        name: NPM Install
-        cwd: compiler/
-        code: npm install
-
-    # A step that executes `npm test` command
-    - npm-test:
-        cwd: compiler/
+        name: Install Runtime Deps
+        cwd: runtime/
+        code: npm install --quiet && npm run typings
+    - script:
+        name: Test Runtime
+        cwd: runtime/
+        code: npm run test:ci
