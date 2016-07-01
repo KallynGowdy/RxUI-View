@@ -121,7 +121,7 @@ export class ViewHost extends BaseLocator implements IViewHost {
         if (host) {
             return host.render(component, bindings, children);
         } else {
-            return null;
+            throw new Error("No ViewHost has currently been registered with the current Locator, so no components can be rendered via this method. Either register a host with the current Locator using Locator.current.register(ViewHostSymbol, () => host) or call host.boot(RootComponent)");
         }
     }
 
@@ -152,9 +152,15 @@ export class ViewHost extends BaseLocator implements IViewHost {
         let subs: Subscription[] = [];
         component.onActivated(s => subs.push(s));
         subs.push(component.children.changed
-            .filter(c => c.removedItems.length > 0)
+            .filter(c => {
+                console.log("filter");
+                return c.removedItems.length > 0;
+            })
             .flatMap(c => c.removedItems)
-            .subscribe(removed => this._deactivateComponent(removed)));
+            .subscribe(removed => {
+                console.log("removed");
+                this._deactivateComponent(removed);
+            }));
         if (component instanceof Component) {
             var reactiveComponent = <Component<TViewModel>>component;
             subs.push(reactiveComponent.whenAnyValue(c => c.rendered)

@@ -67,67 +67,89 @@ describe("ViewHost", () => {
             host.register(MyViewModel, MyComponent);
 
             var result = host.boot(MyViewModel);
-
-            expect(result.root).to.be.instanceOf(MyComponent);
+            try {
+                expect(result.root).to.be.instanceOf(MyComponent);
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should create a view model and assign it to the component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyComponent);
 
             var result = host.boot(MyViewModel);
-
-            expect(result.root.viewModel).to.be.instanceOf(MyViewModel);
+            try {
+                expect(result.root.viewModel).to.be.instanceOf(MyViewModel);
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should activate the component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyComponent);
 
             var result = host.boot(MyViewModel);
-
-            expect(result.root.viewModel.activated).to.be.true;
+            try {
+                expect(result.root.viewModel.activated).to.be.true;
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should activate the entire component tree", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
-
-            expect(result.root.viewModel.activated).to.be.true;
-            var child = result.root.rendered as IComponent<MyChildViewModel>;
-            expect(child.viewModel.activated).to.be.true;
+            try {
+                expect(result.root.viewModel.activated).to.be.true;
+                var child = result.root.rendered as IComponent<MyChildViewModel>;
+                expect(child.viewModel.activated).to.be.true;
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should set the rendered component for the booted component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
-
-            var first: IComponent<MyChildViewModel> = result.root.rendered as any;
-            expect(first).to.be.instanceOf(BoundComponent);
-            expect((first as BoundComponent<MyChildViewModel>).internalComponent).to.be.instanceOf(MyChildComponent);
-            expect(first.viewModel).to.be.instanceOf(MyChildViewModel);
+            try {
+                var first: IComponent<MyChildViewModel> = result.root.rendered as any;
+                expect(first).to.be.instanceOf(BoundComponent);
+                expect((first as BoundComponent<MyChildViewModel>).internalComponent).to.be.instanceOf(MyChildComponent);
+                expect(first.viewModel).to.be.instanceOf(MyChildViewModel);
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should create reactive bindings for the component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
+            try {
+                var rootVm = result.root.viewModel;
+                var first: IComponent<MyChildViewModel> = result.root.rendered as any;
 
-            var rootVm = result.root.viewModel;
-            var first: IComponent<MyChildViewModel> = result.root.rendered as any;
-            var firstVm = first.viewModel;
+                var firstVm = first.viewModel;
 
-            expect(firstVm.property).to.equal(rootVm.property);
-            rootVm.property = "My Value";
-            expect(firstVm.property).to.equal("My Value");
+                expect(firstVm.property).to.equal(rootVm.property);
+                rootVm.property = "My Value";
+                expect(firstVm.property).to.equal("My Value");
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should return a subscription in the result", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
-
-            expect(result.sub).to.be.instanceOf(Subscription);
+            try {
+                expect(result.sub).to.be.instanceOf(Subscription);
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should dispose all of the registered subscriptions", () => {
             var host = new ViewHost();
@@ -146,25 +168,32 @@ describe("ViewHost", () => {
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
+            try {
+                var child = result.root.rendered as IComponent<MyChildViewModel>;
+                expect(child.viewModel.activated).to.be.true;
 
-            var child = result.root.rendered as IComponent<MyChildViewModel>;
-            expect(child.viewModel.activated).to.be.true;
+                result.root.rendered = <MyChildComponent />;
 
-            result.root.rendered = <MyChildComponent />;
-
-            expect(result.root.viewModel.activated).to.be.true;
-            expect(child.viewModel.activated).to.be.false;
+                expect(result.root.viewModel.activated).to.be.true;
+                expect(child.viewModel.activated).to.be.false;
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
         it("should handle multiple changes to #rendered and dispose of each displaced component", () => {
             var host = new ViewHost();
             host.register(MyViewModel, MyParentComponent);
             host.register(MyChildViewModel, MyChildComponent);
             var result = host.boot(MyViewModel);
-            var children = [result.root.rendered as IComponent<MyChildViewModel>];
-            children.push(result.root.rendered = <MyChildComponent />);
-            result.root.rendered = <MyChildComponent />;
+            try {
+                var children = [result.root.rendered as IComponent<MyChildViewModel>];
+                children.push(result.root.rendered = <MyChildComponent />);
+                result.root.rendered = <MyChildComponent />;
 
-            expect(children.every(c => !c.viewModel.activated)).to.be.true;
+                expect(children.every(c => !c.viewModel.activated)).to.be.true;
+            } finally {
+                result.sub.unsubscribe();
+            }
         });
     });
     describe(".render()", () => {
@@ -206,6 +235,35 @@ describe("ViewHost", () => {
             } finally {
                 sub.unsubscribe();
             }
+        });
+        it("should detect changes to children and dispose of the displaced ones", () => {
+            var host = new ViewHost();
+            host.register(MyViewModel, MyParentComponent);
+            host.register(MyChildViewModel, MyChildComponent);
+            var sub = Locator.current.register(ViewHostSymbol, () => host);
+            try {
+                var result: IComponent<MyViewModel> = (
+                    <MyParentComponent>
+                        <MyChildComponent />
+                    </MyParentComponent>
+                );
+
+                var child = result.children.getItem(1) as IComponent<MyChildViewModel>;
+                var newChild: IComponent<MyChildViewModel> = <MyChildComponent />;
+                result.children.splice(1, 1, newChild);
+
+                expect(child.viewModel.activated).to.be.false;
+                expect(newChild.viewModel.activated).to.be.true;
+            } finally {
+                sub.unsubscribe();
+            }
+        });
+        it("should throw an exception if no view host is registered with the current locator", () => {
+            expect(() => {
+                var result = (
+                    <MyParentComponent />
+                );
+            }).to.throw();
         });
     });
 });

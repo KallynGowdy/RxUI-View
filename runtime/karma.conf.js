@@ -21,6 +21,7 @@ module.exports = function(config) {
     ],
 
     client: {
+      captureConsole: true,
       mocha: {
         reporter: 'html',
         ui: 'bdd',
